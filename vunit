@@ -1,0 +1,28 @@
+#!/bin/bash
+
+VUNIT_ROOT='./src/vunit.vim'
+OUT_FILE='output.txt'
+RESULT_FILE='result.txt'
+
+files=$(find $1 -type f -follow -name '*test.vim' -printf "'%p',")
+files=${files::-1}
+
+touch ${OUT_FILE}
+touch ${RESULT_FILE}
+
+nvim --headless -u ${VUNIT_ROOT} -c "call  Execute([${files}], '${OUT_FILE}', '${RESULT_FILE}')|q"
+
+out=$(cat ${OUT_FILE})
+echo -e "${out}"
+rm ${OUT_FILE}
+
+result=$(cat ${RESULT_FILE})
+rm ${RESULT_FILE}
+
+if [[ $result =~ FAILED ]]; then
+    echo ''
+    echo "Tests Failed"
+    exit 1
+fi
+
+exit 0
