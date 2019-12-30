@@ -1,8 +1,9 @@
 #!/bin/bash
 
-VUNIT_ROOT='./src/vunit.vim'
-OUT_FILE='output.txt'
-RESULT_FILE='result.txt'
+DIR=$(dirname $0)
+VUNIT_ROOT=$DIR'/src/vunit.vim'
+OUT_FILE=$DIR'output.txt'
+RESULT_FILE=$DIR'result.txt'
 
 files=$(find $1 -type f -follow -name '*test.vim' -printf "'%p',")
 files=${files::-1}
