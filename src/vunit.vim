@@ -1,12 +1,18 @@
+let g:VUNIT_ASSERT='VUNIT'
+
 let g:out_file = 'output.txt'
 let g:result_file = 'result.txt'
+
+function! Test_Fail()
+    call writefile(['FAILED'], g:result_file)
+endfunction
 
 function! Print_Title(title)
     call writefile([a:title], g:out_file, 'a')
 endfunction
 
 function! Print_Error(message)
-    call writefile([' \e[31m[FAILED] \e[0m'.a:message], g:out_file, 'a')
+    call writefile([' [\e[31mFAILED\e[0m] '.a:message], g:out_file, 'a')
 endfunction
 
 function! Print_Error_Msg(message)
@@ -14,7 +20,7 @@ function! Print_Error_Msg(message)
 endfunction
 
 function! Print_Succes(message)
-    call writefile([' \e[32m[SUCCES] \e[0m'.a:message], g:out_file, 'a')
+    call writefile([' [\e[32mSUCCES\e[0m] '.a:message], g:out_file, 'a')
 endfunction
 
 let g:Test={}
@@ -39,19 +45,35 @@ function g:Test.run_test(test_name)
     catch
         call Print_Error(a:test_name)
 
-        if len(v:exception) >=# 5 && v:exception[0:4] ==# 'VUNIT'
+        if len(v:exception) >=# 5 && v:exception[0:4] ==# g:VUNIT_ASSERT
             call Print_Error_Msg(v:exception[5:])
         else
-            call Print_Error_Msg('Unexpected Exception: '.v:exception)
+            call Print_Error_Msg(' Unexpected Exception: '.v:exception)
         endif
 
-        call writefile(['FAILED'], g:result_file)
+        call Test_Fail()
     endtry
 endfunction
 
-function g:Test.assert_equal(actual, expected)
+function g:Test.assert_equal(actual, expected, ...)
+    let l:msg = 'Assert Equal: '.a:actual.' is not equal to '.a:expected
+    if a:0 >=# 1
+        let l:msg = a:1
+    endif
+
     if a:actual !=# a:expected
-        throw 'VUNIT Assert Equal: '.a:actual.' is not equal to '.a:expected
+        throw g:VUNIT_ASSERT.' '.l:msg
+    endif
+endfunction
+
+function g:Test.assert_not_equal(actual, expected, ...)
+    let l:msg = 'Assert Not Equal: '.a:actual.' is equal to '.a:expected
+    if a:0 >=# 1
+        let l:msg = a:1
+    endif
+
+    if a:actual ==# a:expected
+        throw g:VUNIT_ASSERT.' '.l:msg
     endif
 endfunction
 
@@ -72,7 +94,13 @@ function! Execute(files, out_file, result_file)
     let g:result_file = a:result_file
 
     for l:file in a:files
-        execute 'source '.l:file
+        try
+            execute 'source '.l:file
+        catch
+            call Print_Error("Not able to source '".l:file."'")
+            call Test_Fail()
+            continue
+        endtry
     endfor
 
     for test in s:tests
