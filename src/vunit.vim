@@ -40,7 +40,16 @@ endfunction
 
 function g:Test.run_test(test_name)
     try
+        if has_key(self, 'before_each')
+            call self.before_each()
+        endif
+
         call self[a:test_name]()
+
+        if has_key(self, 'after_each')
+            call self.after_each()
+        endif
+
         call Print_Succes(a:test_name)
     catch
         call Print_Error(a:test_name)
@@ -98,6 +107,7 @@ function! Execute(files, out_file, result_file)
             execute 'source '.l:file
         catch
             call Print_Error("Not able to source '".l:file."'")
+            call Print_Error_Msg(v:exception)
             call Test_Fail()
             continue
         endtry
