@@ -23,11 +23,33 @@ function! Print_Succes(message)
     call writefile([' [\e[32mSUCCES\e[0m] '.a:message], g:out_file, 'a')
 endfunction
 
+let s:Result={}
+function s:Result.new()
+    let l:newResult = copy(self)
+    let l:newResult.succeed = 0
+    let l:newResult.failed = 0
+    return l:newResult
+endfunction
+
+function s:Result.add_succes()
+    let self.succeed = self.succeed + 1
+endfunction
+
+function s:Result.add_failure()
+    let self.failed = self.failed + 1
+endfunction
+
+function s:Result.print()
+    call Print_Title('Result - '.self.succeed.' Success '.self.failed.' Failures')
+endfunction
+
 let g:Test={}
-function g:Test.new()
+function g:Test.new(result)
     let l:newTest = copy(self)
+    let l:newTest.result = a:result
     return l:newTest
 endfunction
+
 
 function g:Test.run()
     call Print_Title(self.name)
@@ -50,9 +72,10 @@ function g:Test.run_test(test_name)
             call self.after_each()
         endif
 
-        call Print_Succes(a:test_name)
+        call Print_Succes(a:test_name[5:])
+        call self.result.add_succes()
     catch
-        call Print_Error(a:test_name)
+        call Print_Error(a:test_name[5:])
 
         if len(v:exception) >=# 5 && v:exception[0:4] ==# g:VUNIT_ASSERT
             call Print_Error_Msg(v:exception[5:])
@@ -61,11 +84,34 @@ function g:Test.run_test(test_name)
         endif
 
         call Test_Fail()
+        call self.result.add_failure()
     endtry
 endfunction
 
+function g:Test.assert_true(actual, ...)
+    let l:msg = 'Assert True: "'.string(a:actual).'" is not true'
+    if a:0 >=# 1
+        let l:msg = a:1
+    endif
+
+    if a:actual !=# 1
+        throw g:VUNIT_ASSERT.' '.l:msg
+    endif
+endfunction
+
+function g:Test.assert_false(actual, ...)
+    let l:msg = 'Assert False: "'.string(a:actual).'" is not false'
+    if a:0 >=# 1
+        let l:msg = a:1
+    endif
+
+    if a:actual !=# 0
+        throw g:VUNIT_ASSERT.' '.l:msg
+    endif
+endfunction
+
 function g:Test.assert_equal(actual, expected, ...)
-    let l:msg = 'Assert Equal: '.a:actual.' is not equal to '.a:expected
+    let l:msg = 'Assert Equal: '.string(a:actual).' is not equal to '.string(a:expected)
     if a:0 >=# 1
         let l:msg = a:1
     endif
@@ -76,7 +122,7 @@ function g:Test.assert_equal(actual, expected, ...)
 endfunction
 
 function g:Test.assert_not_equal(actual, expected, ...)
-    let l:msg = 'Assert Not Equal: '.a:actual.' is equal to '.a:expected
+    let l:msg = 'Assert Not Equal: '.string(a:actual).' is equal to '.string(a:expected)
     if a:0 >=# 1
         let l:msg = a:1
     endif
@@ -87,15 +133,14 @@ function g:Test.assert_not_equal(actual, expected, ...)
 endfunction
 
 let s:tests=[]
+let s:result=s:Result.new()
+
 function! Test(name)
     let l:newTest = {}
-    let l:newTest = extend(g:Test.new(), l:newTest)
+    let l:newTest = extend(g:Test.new(s:result), l:newTest)
     let l:newTest.name = a:name
+    call add(s:tests, l:newTest)
     return l:newTest
-endfunction
-
-function! RegisterTest(test)
-    call add(s:tests, a:test)
 endfunction
 
 function! Execute(files, out_file, result_file)
@@ -114,7 +159,8 @@ function! Execute(files, out_file, result_file)
     endfor
 
     for test in s:tests
-        call test.run()
+        let l:result = test.run()
     endfor
+    call s:result.print()
 endfunction
 

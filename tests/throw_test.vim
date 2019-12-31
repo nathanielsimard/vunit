@@ -12,5 +12,3 @@ function g:TrowTest.test_throw_succeed()
     endtry
 endfunction
 
-call RegisterTest(g:TrowTest)
-

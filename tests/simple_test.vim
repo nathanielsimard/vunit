@@ -20,5 +20,3 @@ function g:SimpleTest.test_custom_message()
     call self.assert_equal(1, 0, 'This is a custom error message')
 endfunction
 
-call RegisterTest(g:SimpleTest)
-
