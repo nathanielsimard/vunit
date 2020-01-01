@@ -1,13 +1,15 @@
 #!/bin/bash
 
-mkdir -p $HOME/.local
-mkdir -p $HOME/.local/share
-mkdir -p $HOME/.local/share/vunit
-mkdir -p $HOME/.local/share/vunit/src
+localisation=$1
 
-cp ./vunit $HOME/.local/share/vunit/
-cp -r ./src/* $HOME/.local/share/vunit/src
+mkdir -p $localisation
+mkdir -p $localisation/share
+mkdir -p $localisation/share/vunit
+mkdir -p $localisation/share/vunit/src
 
-echo '$HOME/.local/share/vunit/vunit $@' > $HOME/.local/bin/vunit
-chmod +x $HOME/.local/bin/vunit
+cp ./vunit $localisation/share/vunit/
+cp -r ./src/* $localisation/share/vunit/src
+
+echo $localisation'/share/vunit/vunit $@' > $localisation/bin/vunit
+chmod +x $localisation/bin/vunit
 
