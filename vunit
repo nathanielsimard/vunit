@@ -8,22 +8,43 @@ RESULT_FILE=$DIR'result.txt'
 files=$(find $1 -type f -follow -name '*test.vim' -printf "'%p',")
 files=${files::-1}
 
-touch ${OUT_FILE}
-touch ${RESULT_FILE}
+runner=$2
 
-nvim --headless -u ${VUNIT_ROOT} -c "call  Execute([${files}], '${OUT_FILE}', '${RESULT_FILE}')|q"
+run_tests() {
+    touch ${OUT_FILE}
+    touch ${RESULT_FILE}
 
-out=$(cat ${OUT_FILE})
-echo -e "${out}"
-rm ${OUT_FILE}
+    if [[ $1 == 'nvim' ]]; then
+        nvim --headless -u ${VUNIT_ROOT} -c "call  Execute([${files}], '${OUT_FILE}', '${RESULT_FILE}')|q"
+    else
+        vim -u ${VUNIT_ROOT} -c "call  Execute([${files}], '${OUT_FILE}', '${RESULT_FILE}')|q"
+    fi
 
-result=$(cat ${RESULT_FILE})
-rm ${RESULT_FILE}
+    out=$(cat ${OUT_FILE})
+    echo -e "${out}"
+    rm ${OUT_FILE}
+    result=$(cat ${RESULT_FILE})
+    rm ${RESULT_FILE}
 
-if [[ $result =~ FAILED ]]; then
-    echo ''
-    echo "Tests Failed"
-    exit 1
+    if [[ $result =~ FAILED ]]; then
+        return 1
+    else
+        return 0
+    fi
+}
+
+if [[ $runner == '--nvim' ]]; then
+    echo '=== Running tests with Neovim ==='
+    run_tests nvim
+    exit $?
 fi
 
-exit 0
+if [[ $runner == '--vim' ]]; then
+    echo '=== Running tests with Vim ==='
+    run_tests vim
+    exit $?
+fi
+
+echo 'No running specified'
+exit 1
+
